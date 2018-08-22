@@ -1,0 +1,482 @@
+#! /bin/bash
+
+test_passed=0
+test_fail=0
+echo -e "Integration tests by mariusvnh, zuldruck, simontraww"
+echo -e "\n\nTESTS\n"
+
+#simple exit
+echo "exit" | ./mysh &> log.txt
+if [ $? != 0 ]; then
+	echo -e "simple exit: Return value was $?\nExpected 0\n"
+else {
+	echo -e "simple exit: PASSED\n"
+	((test_passed++))
+}
+fi
+
+DIFF=$(diff <(cat log.txt) <(echo "exit"))
+if [ "$DIFF" != "" ]; then
+	echo -e "simple exit: Got: $DIFF\nExpected: \"\"\n"
+else
+	echo -e "simple exit [2]: PASSED\n"
+	((test_passed++))
+fi
+
+#exit 43
+echo "exit 43" | ./mysh &> log.txt
+if [ $? != 43 ]; then
+	echo -e "exit 43: Return value was $?\nExpected 43\n"
+else {
+	echo -e "exit 43: PASSED\n"
+	((test_passed++))
+}
+fi
+
+DIFF=$(diff <(cat log.txt) <(echo "exit"))
+if [ "$DIFF" != "" ]; then
+	echo -e "exit 43: Got: $DIFF\nExpected: \"\"\n"
+else {
+	echo -e "exit 43 [2]: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#exit test
+echo "exit test" | ./mysh &> log.txt
+echo "exit test" | tcsh &> tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "exit test: Got: $DIFF\nExpected: \"\"\n"
+else {
+	echo -e "exit test: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#exit 42test
+echo "exit 42test" | ./mysh &> log.txt
+echo "exit 42test" | tcsh >& tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "exit 42test: Got: $DIFF\nExpected: \"\"\n"
+else {
+	echo -e "exit 42test: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#exit badly [SIMONTRAWW]
+echo "exit -77j" | ./mysh &> log.txt
+echo "exit -77j" | tcsh &> tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "exit -77j: Got: $DIFF\nExpected: \"\"\n"
+else {
+	echo -e "exit -77j: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#pwd
+echo -e "cd ..\npwd" | ./mysh &> log.txt
+echo -e "cd ..\npwd" | tcsh &> tcsh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcsh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "exit cd ..;pwd: Got: $DIFF\nExpected: \"\"\n"
+else {
+	echo -e "exit cd ..;pwd: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#env path presence
+echo -e "env" | ./mysh &> log.txt
+
+DIFF=$(cat log.txt | grep "^PATH=" | wc -l)
+if [ "$DIFF" != "1" ]; then
+	echo -e "env PATH check: Got: $DIFF\nExpected: \"1\"\n"
+else {
+	echo -e "env PATH check: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#setenv
+echo -e "setenv SALUT PUTE\nenv" | ./mysh &> log.txt
+
+DIFF=$(cat log.txt | grep "^SALUT=PUTE" | wc -l)
+if [ "$DIFF" != "1" ]; then
+	echo -e "setenv test: Got: $DIFF\nExpected: \"1\"\n"
+else {
+	echo -e "setenv test: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#setenv
+echo -e "unsetenv PATH\nenv" | ./mysh &> log.txt
+
+DIFF=$(cat log.txt | grep "^PATH" | wc -l)
+if [ "$DIFF" != "0" ]; then
+	echo -e "unsetenv test: Got: $DIFF\nExpected: \"1\"\n"
+else {
+	echo -e "unsetenv test: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#setenv
+mkdir lstest
+mkdir lstest/plouplou
+touch lstest/salut.txt
+touch lstest/lala.txt
+touch lstest/plouplou/yop.txt
+cd lstest
+
+echo -e "cd plouplou\nls" | ./../mysh &> log.txt
+echo -e "cd plouplou\nls" | tcsh &> tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "ls: Got: $DIFF\n"
+else {
+	echo -e "ls: PASSED\n"
+	((test_passed++))
+}
+fi
+
+
+#TEST LONG SPACES [SIMONTRAWW]
+echo "ls		 " | ./../mysh &>log.txt
+echo "ls		 " | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST LONG WHITESPACES : Got: $DIFF\n"
+else {
+	echo -e "TEST LONG WHITESPACES : PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST WITH TAB [SIMONTRAWW]
+echo "ls		" | ./../mysh &>log.txt
+echo "ls		" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST WITH TAB : Got: $DIFF\n"
+else {
+	echo -e "TEST WITH TAB : PASSED\n"
+	((test_passed++))
+}
+fi
+cd ..
+rm -rf lstest
+
+
+#TEST WITH spaces [SIMONTRAWW]
+echo "cd        ../" | ./mysh &>log.txt
+echo "cd        ../" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST CD ../ WITH SPACES : Got: $DIFF\n"
+else {
+	echo -e "TEST CD ../ WITH SPACES : PASSED\n"
+	((test_passed++))
+}
+fi
+
+
+
+#TEST WITH TAB [SIMONTRAWW]
+echo -e "\t\tcd\t" | ./mysh &>log.txt
+echo -e "\t\tcd\t" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST CD WITH SPACES : Got: $DIFF\n"
+else {
+	echo -e "TEST CD WITH SPACES : PASSED\n"
+	((test_passed++))
+}
+fi
+
+#execute non executable file
+echo -e "./Makefile" | ./mysh &> log.txt
+echo -e "./Makefile" | tcsh &> tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "ls: Got: $DIFF\n"
+else {
+	echo -e "ls: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST CHMOD -x [SIMONTRAWW]
+touch foobar
+echo "echo \"fail\"" | > foobar
+echo "chmod -x ./foobar" | ./mysh
+echo "chmod -x ./foobar" | tcsh
+echo -e "./foobar" | ./mysh &> log.txt
+echo -e "./foobar" | tcsh &> tcssh.txt
+rm -rf foobar
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST CHMOD: Got: $DIFF\n"
+else {
+	echo -e "TEST CHMOD: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST CHMOD +x on picture [SIMONTRAWW]
+wget http://convertir-une-image.com/frontframe/images/cute_ball_info.png &> /dev/null
+mv cute_ball_info.png test.png &> /dev/null
+echo "chmod +x test.png" | ./mysh &> /dev/null
+echo "chmod +x test.png" | tcsh &> /dev/null
+echo -e "./test.png" | ./mysh &> log.txt
+echo -e "./test.png" | tcsh &> tcssh.txt
+rm -rf test.png
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST EXEC IMG: Got: $DIFF\n"
+else {
+	echo -e "TEST EXEC IMG: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST programm segfault [SIMONTRAWW]
+mkdir tests
+cd tests
+wget http://epi2022.fr/neo/PSU/PSU_minishell1_2017/segfault.c &> /dev/null
+echo "gcc segfault.c" | ./../mysh &> /dev/null
+echo "gcc segfault.c" | tcsh &> /dev/null
+echo -e "./a.out" | ./../mysh &> log.txt
+echo -e "./a.out" | tcsh &> tcssh.txt
+rm -rf segfault.c &> /dev/null
+rm -rf a.out &> /dev/null
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST SEGFAULT: Got: $DIFF\n"
+else {
+	echo -e "TEST SEGFAULT: PASSED\n"
+	((test_passed++))
+}
+fi
+
+
+#TEST programm floating point exeception [SIMONTRAWW]
+wget http://epi2022.fr/neo/PSU/PSU_minishell1_2017/floating.c &> /dev/null
+echo "gcc floating.c -lm" | ./../mysh &> /dev/null
+echo "gcc floating.c -lm" | tcsh &> /dev/null
+echo -e "./a.out" | ./../mysh &> log.txt
+echo -e "./a.out" | tcsh &> tcssh.txt
+rm -rf floating.c
+rm -rf a.out
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST FLOATING point exception: Got: $DIFF\n"
+else {
+	echo -e "TEST FLOATING point exception: PASSED\n"
+	((test_passed++))
+}
+fi
+cd ..
+rm -rf tests
+
+#TEST ERROR + one or two letter after word [SIMONTRAWW]
+echo -e "exitt" | ./mysh &> log.txt
+echo -e "exitt" | tcsh  &> tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST EXITT (one two letter at the end of word): Got: $DIFF\n"
+else {
+	echo -e "TEST EXITT (one two letter at the end of word): PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST ERROR + one or two letter after word [SIMONTRAWW]
+
+echo -e "unsetenvv" | ./mysh &> log.txt
+echo -e "unsetenvv" | tcsh  &> tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST unsetenvv (one two letter at the end of word): Got: $DIFF\n"
+else {
+	echo -e "TEST unsetenvv (one two letter at the end of word): PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST ERROR + one or two letter after word [SIMONTRAWW]
+echo -e "setenvi" | ./mysh &> log.txt
+echo -e "setenvi" | tcsh  &> tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST setenvi (one two letter at the end of word): Got: $DIFF\n"
+else {
+	echo -e "TEST setenvi (one two letter at the end of word): PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST cd [SIMONTRAWW]
+echo "cd" | ./mysh
+echo "cd" | tcsh
+echo -e "pwd" | ./mysh &>log.txt
+echo -e "pwd" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST cd : Got: $DIFF\n"
+else {
+	echo -e "TEST cd : PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST cd ../ [SIMONTRAWW]
+echo "cd ../" | ./mysh
+echo "cd ../" | tcsh
+echo -e "pwd" | ./mysh &>log.txt
+echo -e "pwd" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST cd ../ : Got: $DIFF\n"
+else {
+	echo -e "TEST cd ../ : PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST cd /dev [SIMONTRAWW]
+echo "cd /dev" | ./mysh
+echo "cd /dev" | tcsh
+echo -e "pwd" | ./mysh &>log.txt
+echo -e "pwd" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST cd /dev : Got: $DIFF\n"
+else {
+	echo -e "TEST cd /dev : PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST cd NULL [SIMONTRAWW]
+echo -e "cd NULL" | ./mysh &>log.txt
+echo -e "cd NULL" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST cd NULL directory : Got: $DIFF\n"
+else {
+	echo -e "TEST cd NULL directory : PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST cd random dirr [SIMONTRAWW]
+echo "cd ../../../../../../../../" | ./mysh
+echo "cd ../../../../../../../../" | tcsh
+echo -e "pwd" | ./mysh &>log.txt
+echo -e "pwd" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST random dirr : Got: $DIFF\n"
+else {
+	echo -e "TEST random dirr : PASSED\n"
+	((test_passed++))
+}
+fi
+
+
+#TEST cd moins without any OLDPWD [SIMONTRAWW]
+echo "cd -" | ./mysh &> /dev/null
+echo "cd -" | tcsh &> /dev/null
+echo -e "pwd" | ./mysh &>log.txt
+echo -e "pwd" | tcsh &>tcssh.txt
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST cd moins without OLDPWD : Got: $DIFF\n"
+else {
+	echo -e "TEST cd moins without OLDPWD: PASSED\n"
+	((test_passed++))
+}
+fi
+
+#TEST NAME TOO LONG [SIMONTRAWW]
+echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" | ./mysh &>log.txt ./mysh &> /dev/null
+echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" | tcsh &>tcssh.txt tcsh &> /dev/null
+
+DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+if [ "$DIFF" != "" ]; then
+	echo -e "TEST CD NAME TOO LONG: Got: $DIFF\n"
+else {
+	echo -e "TEST CD NAME TOO LONG : PASSED\n"
+	((test_passed++))
+}
+fi
+
+echo "####################################"
+echo "SUCCESS TEST --> " $test_passed
+test_fail=$(echo "31-$test_passed" |bc )
+echo "FAIL TEST --> " $test_fail
+echo "####################################"
+
+# IL FAUT TROUVER UNE SOLUTION POUR CES TESTS..
+#######################################################################################################################################################
+# CE TEST EST PROBLEMATIQUE --> il aura toujours un soucis au niveaux du level du shell dans le system ! SHLVL. mais s'il y a que ça, le test passed !#
+#######################################################################################################################################################
+#echo -e "setenv" | ./mysh &> log.txt
+#echo -e "setenv" | tcsh  &> tcssh.txt
+#
+#DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+#if [ "$DIFF" != "" ]; then
+#	echo -e "TEST setenv : Got: $DIFF\n"
+#else
+#	echo -e "TEST setenv : PASSED\n"
+#fi
+
+#######################################################################################################################################################
+# CE TEST EST PROBLEMATIQUE --> il aura toujours un soucis au niveaux du level du shell dans le system ! SHLVL. mais s'il y a que ça, le test passed !#
+#######################################################################################################################################################
+#TEST ERROR + one or two letter after word
+#
+#echo -e "env" | ./mysh &> log.txt
+#echo -e "env" | tcsh  &> tcssh.txt
+#
+#DIFF=$(diff <(cat log.txt) <(cat tcssh.txt))
+#if [ "$DIFF" != "" ]; then
+#	echo -e "TEST PRINT env: Got: $DIFF\n"
+#else
+#	echo -e "TEST PRINT env: PASSED\n"
+#fi
+rm -rf log.txt
+rm -rf tcsh.txt
+rm -rf tcssh.txt
+echo -e "\nEND OF TESTS\n"
